@@ -4,8 +4,8 @@ import os
 from learn_kalman import learn_kalman
 from kalman_filter import kalman_smoother, kalman_filter
 from cvi_helpers import get_elbo, E_log_p_mc, make_y_R_tilde, sample_posterior, maximize_non_conjugate
-from utils import dotdict, plot_posterior, plot_learned_matrices
-from get_data import get_poission_model
+from utils import dotdict, plot_posterior, plot_learned_matrices, print_status
+from get_data import get_poission_model, get_parameters
 import tensorflow as tf
 # Supress TF warning
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -49,12 +49,9 @@ def train(args):
     xfilt, Vfilt, VVfilt, loglik = kalman_filter(
         y_tilde, A, C, Q, R_tilde, initx, initV)
 
-    print "===========Running CVI==============="
-    if args.learn_matrices:
-        print "--------Learning Parameters----------"
-    else:
-        print "--------Using True Parameters--------"
-    print "====================================="
+    # print
+    print_status(args)
+
     elbo = []
     all_loglik = []
     for i in range(args.cvi_iters):
@@ -78,9 +75,9 @@ def train(args):
         xfilt, Vfilt, VVfilt, loglik = kalman_filter(
             y_tilde, A, C, Q, R_tilde, initx, initV)
 
+        # Get smoothed posteriors (for plotting + M step)
         xsmooth, Vsmooth, VVsmooth, loglik = kalman_smoother(
             y_tilde, A, C, Q, R_tilde, initx, initV)
-
         # ------------ end -----------
 
         # -----------M Step -----------
@@ -108,7 +105,7 @@ def train(args):
         # ------------ end -----------
 
         # Save elbo + loglik
-        elbo += [get_elbo(fb, y_tilde, xfilt, Vfilt, R_tilde, C, loglik)]
+        elbo += [get_elbo(fb, y_tilde, xfilt, Vfilt, R_tilde, C, D, loglik)]
         all_loglik += [loglik]
 
         print "Iteration %i, LogLik: %f" % (i, loglik)
@@ -137,14 +134,14 @@ if __name__ == '__main__':
     # Hyperparameters
     args = dotdict()
     args.ls = 5
-    args.os = 11
-    args.T = 310
+    args.os = 10
+    args.T  = 500
     args.cvi_iters = 15
-    args.mstep_lr = 0.05
+    args.mstep_lr  = 0.05
     args.mstep_iters = 200
     args.nSamples = 500
-    args.verbose = False
-    args.seed = 10
+    args.verbose  = False
+    args.seed     = 10
 
     # Set seed
     np.random.seed(args.seed)
@@ -159,18 +156,19 @@ if __name__ == '__main__':
     args.y_data = y_data.T
 
     # Get true parameters
-    A, QChol, Q0Chol, x0, W, b = true_model.getParams()
-    args.A_true = A.get_value()
-    args.C_true = W.get_value().T
-    args.Q_true = np.matmul(QChol.get_value(), QChol.get_value().T)
-    args.D_true = np.expand_dims(b.get_value(), 1)
-    args.initx_true = np.expand_dims(x0.get_value(), 1)
-    args.initV_true = np.matmul(Q0Chol.get_value(), Q0Chol.get_value().T)
+    A, C, Q, D, initx, initV = get_parameters(true_model)
+    args.A_true = A
+    args.C_true = C
+    args.Q_true = Q
+    args.D_true = D
+    args.initx_true = initx
+    args.initV_true = initV
 
     # Train
     args.learn_matrices = False
     train(args)
 
+    # Learning matrices
     args.learn_matrices = True
     train(args)
 

@@ -66,6 +66,15 @@ def check_format(y, mu, cov):
     return y, mu, cov
 
 
+def print_status(args):
+    print "===========Running CVI==============="
+    if args.learn_matrices:
+        print "--------Learning Parameters----------"
+    else:
+        print "--------Using True Parameters--------"
+    print "====================================="
+
+
 def plot_posterior(args, path='results.png'):
     # Init
     plt.close('all')
@@ -98,7 +107,7 @@ def plot_posterior(args, path='results.png'):
         ax = fig.add_subplot(3, 2, 3 + i)
         ax.plot(range(T), x_data[i, :], color = 'C1', label='True')
         ax.plot(range(T), xsmooth[i, :], color='C2',label='CVI')
-        ax.fill_between(range(T), x_data[i, :]-uncertainty[i, i, :], x_data[i, :]+uncertainty[i, i, :], color='C2', alpha=0.35)
+        ax.fill_between(range(T), xsmooth[i, :]-uncertainty[i, i, :], xsmooth[i, :]+uncertainty[i, i, :], color='C2', alpha=0.35)
         ax.set_title('Latent state, dimension {}'.format(str(i)))
         ax.set_xlabel('Timestep t')
         ax.legend(["True", "CVI"], loc='upper right')

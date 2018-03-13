@@ -34,3 +34,15 @@ def get_poission_model(xDim, yDim, seed=1):
     true_model = PLDS(gendict, xDim, yDim, srng=msrng, nrng=mnrng)
 
     return true_model
+
+def get_parameters(model):
+    A, QChol, Q0Chol, x0, W, b = model.getParams()
+    A = A.get_value()
+    C = W.get_value().T
+    Q = np.matmul(QChol.get_value(), QChol.get_value().T)
+    D = np.expand_dims(b.get_value(), 1)
+    initx = np.expand_dims(x0.get_value(), 1)
+    initV = np.matmul(Q0Chol.get_value(), Q0Chol.get_value().T)
+
+    return A, C, Q, D, initx, initV
+

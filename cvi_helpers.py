@@ -14,12 +14,12 @@ import tensorflow as tf
 # \end{align*}
 
 
-def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, logZ):
+def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, D, logZ):
     os, K = ytilde.shape
     elbo = 0
     for k in range(K):
         # v = y_kt - C*u_kt
-        v = column_vec(ytilde[:, k] - np.matmul(C, xfilt[:, k]))
+        v = column_vec(ytilde[:, k] - np.matmul(C, xfilt[:, k]) - D[:, 0])
         Rk = R[:, :, k]
         Rinv = np.linalg.inv(Rk)
 
@@ -135,9 +135,6 @@ def maximize_non_conjugate(data, lr = 0.01, iters=500, verbose=True):
 
     return Cval, Dval
 
-
-
-
 def make_y_R_tilde(tlam_1, tlam_2):
     assert tlam_1.shape == tlam_2.shape
     os, T = tlam_1.shape
@@ -150,48 +147,6 @@ def make_y_R_tilde(tlam_1, tlam_2):
         np.fill_diagonal(R_tilde[:, :, i], var_tilde[:, i])
 
     return y_tilde, R_tilde
-
-
-# def kalman_backwards_sampler(x, V, A, Q, sample_size=10):
-#     # Implementation follows:
-#     # http://people.isy.liu.se/rt/schon/Publications/LindstenS2013.pdf
-#     #  - section 1.7 Backward Simulation in Linear Gaussian SSMs,
-#     #  - equations 1.18b, 1.18c
-#     ls, T = x.shape
-#     raw_noise = np.random.randn(ls, sample_size)
-
-#     samples = np.zeros((ls, sample_size, T))
-
-#     # Initialize
-#     samples[:, :, T - 1] = chol_sample(raw_noise, x[:, T - 1], V[:, :, T - 1])
-
-#     for t in xrange(T - 2, -1, -1):
-#         Pt = V[:, :, t]
-#         xt = x[:, t]
-#         xt = np.expand_dims(x[:, t], -1)
-
-#         # Make:
-#         # ut = xt + P*A.T*(Q + APA.T)^-1*(x_(t+1) - A*xt)
-#         # Mt = Pt - Pt*A.T*(Q + APA.T)^-1*APt
-
-#         # Dummy variables:
-#         # B = x_(t+1) - A*xt
-#         # Z = Q + APA.T
-#         # L = P*A.T
-
-#         # ut = xt + L*(Z^-1*B)
-#         B = samples[:, :, t + 1] - np.matmul(A, xt)
-#         Z = Q + np.matmul(A, np.matmul(Pt, A.T))
-#         L = np.matmul(Pt, A.T)
-#         ut = xt + np.matmul(L, np.linalg.solve(Z, B))
-
-#         # Mt = Pt - L*(Z^-1*L.T)
-#         Mt = Pt - np.matmul(L, np.linalg.solve(Z, L.T))
-
-#         # Sample
-#         samples[:, :, t] = chol_sample(raw_noise, ut, Mt)
-
-#     return samples
 
 
 def sample_posterior(x, V, nSamples):
