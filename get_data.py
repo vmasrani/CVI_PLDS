@@ -40,9 +40,8 @@ def get_parameters(model):
     A = A.get_value()
     C = W.get_value().T
     Q = np.matmul(QChol.get_value(), QChol.get_value().T)
-    D = np.expand_dims(b.get_value(), 1)
     initx = np.expand_dims(x0.get_value(), 1)
     initV = np.matmul(Q0Chol.get_value(), Q0Chol.get_value().T)
 
-    return A, C, Q, D, initx, initV
+    return A, C, Q, initx, initV
 

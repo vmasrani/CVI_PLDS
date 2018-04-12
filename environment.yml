@@ -1,0 +1,6 @@
+name: cvi-poisson-lds
+channels:
+- conda-forge
+- defaults
+prefix: /Users/vmasrani/miniconda2/envs/cvi-poisson-lds
+
