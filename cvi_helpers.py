@@ -14,12 +14,12 @@ import tensorflow as tf
 # \end{align*}
 
 
-def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, D, logZ):
+def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, logZ):
     os, K = ytilde.shape
     elbo = 0
     for k in range(K):
         # v = y_kt - C*u_kt
-        v = column_vec(ytilde[:, k] - np.matmul(C, xfilt[:, k]) - D[:, 0])
+        v = column_vec(ytilde[:, k] - np.matmul(C, xfilt[:, k]))
         Rk = R[:, :, k]
         Rinv = np.linalg.inv(Rk)
 
@@ -27,7 +27,6 @@ def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, D, logZ):
         elbo_k += 0.5 * np.linalg.multi_dot([v.T, Rinv, v])
         elbo_k += 0.5 * \
             np.trace(np.linalg.multi_dot([C.T, Rinv, C, Vfilt[:, :, k]]))
-        # Potential issue here
         elbo_k += 0.5 * np.log(np.linalg.det(Rk))
 
         elbo += elbo_k
@@ -35,105 +34,79 @@ def get_elbo(Elog_p, ytilde, xfilt, Vfilt, R, C, D, logZ):
     elbo += logZ
     return elbo.item()
 
-
-def E_log_p_mc(y, mc_latent, C, D, sample_size=10):
+# -----------------------------
+# Overwrite with own likelihood
+# ----------------------------
+def non_conjugate_likelihood(*args):
+    # Init
+    y, mc_latent, C = args
     ls, sample_size, T = mc_latent.shape
     os, T = y.shape
-
+    # For numerical stability
     eps = 1e-6
 
     mc_latent = np.swapaxes(mc_latent, 2, 1)
     ybroad = np.tile(np.expand_dims(y, axis=2), [1, 1, sample_size])
 
-    sess = tf.InteractiveSession()
-
     # Initalize tensorflow variables
     C = tf.Variable(C, name='C', dtype=tf.float32)
-    D = tf.Variable(D, name='D', dtype=tf.float32)
 
     # Initalize tensorflow placeholders
     X = tf.placeholder("float",  shape=mc_latent.shape)
     Y = tf.placeholder("float", shape=(os, T, sample_size))
 
     Z = tf.tensordot(C, X, axes = [[1], [0]])
-    Z = tf.add(Z, tf.expand_dims(D, axis=2))
 
-    # exp link
-    # pdf = tf.contrib.distributions.Poisson(log_rate=Z, allow_nan_stats=False)
-
-    # softplus
-    rate = tf.nn.softplus(Z) + eps
-    pdf = tf.contrib.distributions.Poisson(rate=rate, allow_nan_stats=False)
-
-    f   = pdf.log_prob(value=Y)
-    df  = tf.gradients(f, Z)
-    d2f = tf.gradients(df, Z)
-
-    # Run
-    sess.run(tf.global_variables_initializer())
+    rate   = tf.nn.softplus(Z) + eps
+    pdf    = tf.contrib.distributions.Poisson(rate=rate, allow_nan_stats=False)
+    logpdf = pdf.log_prob(value=Y)
     feeddict = {X: mc_latent, Y: ybroad}
 
-    f_results = sess.run(f, feeddict)
-    df_results = sess.run(df, feeddict)[0]
-    d2f_results = sess.run(d2f, feeddict)[0]
+    # Return logpdf, mean parameter, feeddict, and variables to be optimized
+    return logpdf, Z, feeddict, C
+
+
+def E_log_p_mc(y, mc_latent, C):
+    logpdf, mean_par, feeddict, _ = non_conjugate_likelihood(y, mc_latent, C)
+
+    f   = logpdf
+    df  = tf.gradients(f, mean_par)
+    d2f = tf.gradients(df, mean_par)
+
+    # Run
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        f_results = sess.run(f, feeddict)
+        df_results = sess.run(df, feeddict)[0]
+        d2f_results = sess.run(d2f, feeddict)[0]
 
     # Average MC samples
     f = f_results.mean(axis=2)
+    # First derivative
     gm = df_results.mean(axis=2)
+    # Second derivative
     gv = d2f_results.mean(axis=2) / 2.0
-    sess.close()
+
     return f, gm, gv
 
+# For M step if CVI is used in EM
+def maximize_non_conjugate(y, mc_latent, C, lr = 0.01, iters=500, verbose=True):
+    logpdf, _, feeddict, C = non_conjugate_likelihood(y, mc_latent, C)
 
-def maximize_non_conjugate(data, lr = 0.01, iters=500, verbose=True):
-    ls, sample_size, T = data["Z"].shape
-    os, _ = data["Y"].shape
-
-    sess = tf.InteractiveSession()
-    # Change indexing to conform to TensorFlow broadcast rules
-    # mc_samples = np.reshape(data["Z"], (ls, T, sample_size))
-    eps = 1e-6
-    mc_samples = np.swapaxes(data["Z"], 2, 1)
-
-    # Initalize tensorflow variables
-    C = tf.Variable(data["C"], name='C', dtype=tf.float32)
-    D = tf.Variable(data["D"], name='D', dtype=tf.float32)
-
-    X = tf.placeholder("float",  shape=mc_samples.shape)
-    Y = tf.placeholder("float", shape=(os, T, sample_size))
-
-    Z = tf.tensordot(C, X, axes = [[1], [0]])
-    Z = tf.add(Z, tf.expand_dims(D, axis=2))
-
-    # exp link
-    # pdf = tf.contrib.distributions.Poisson(log_rate=Z, allow_nan_stats=False)
-
-    # softplus
-    rate = tf.nn.softplus(Z) + eps
-    pdf = tf.contrib.distributions.Poisson(rate=rate, allow_nan_stats=False)
-
-    cost = tf.reduce_sum(tf.reduce_mean(pdf.log_prob(value=Y), axis=2))
-
-    # logpdf = tf.multiply(Y, log_rate) - tf.exp(log_rate) - tf.lgamma(Y + 1)
-    # cost = tf.reduce_sum(tf.reduce_mean(logpdf, axis=2))
-
-    ybroad = np.tile(np.expand_dims(data['Y'], axis=2), [1, 1, sample_size])
+    cost = tf.reduce_sum(tf.reduce_mean(logpdf, axis=2))
 
     optimizer = tf.train.AdamOptimizer(learning_rate=lr)  # Adam Optimizer
     opt_op = optimizer.minimize(-cost)
-    feeddict = {X: mc_samples, Y: ybroad}
 
-    sess.run(tf.global_variables_initializer())
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for epoch in range(iters):
+            _, loss_val = sess.run([opt_op, cost], feeddict)
+            if verbose:
+                print "Epoch: %04d, train_loss: %04f" % (epoch + 1,loss_val)
+        Cval = C.eval()
 
-    for epoch in range(iters):
-        _, loss_val = sess.run([opt_op, cost], feeddict)
-        if verbose:
-            print "Epoch: %04d, train_loss: %04f" % (epoch + 1,loss_val )
-
-    Cval, Dval = C.eval(), D.eval()
-    sess.close()
-
-    return Cval, Dval
+    return Cval
 
 def make_y_R_tilde(tlam_1, tlam_2):
     assert tlam_1.shape == tlam_2.shape
@@ -155,6 +128,5 @@ def sample_posterior(x, V, nSamples):
     samples = np.zeros((ls, nSamples, T))
     for t in range(T):
         samples[:, :, t] = chol_sample(raw_noise, x[:, t], V[:, :, t])
-
     return samples
 
