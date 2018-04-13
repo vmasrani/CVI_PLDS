@@ -113,5 +113,4 @@ if __name__ == '__main__':
     args.initV = initV
 
     # Train
-    args.learn_matrices = False
     train(args)
