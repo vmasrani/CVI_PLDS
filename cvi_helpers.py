@@ -1,5 +1,5 @@
 import numpy as np
-from utils import check_format, column_vec, chol_sample
+from utils import column_vec, chol_sample
 import tensorflow as tf
 
 # \begin{align*}
@@ -57,17 +57,17 @@ def non_conjugate_likelihood(*args):
 
     Z = tf.tensordot(C, X, axes = [[1], [0]])
 
-    rate   = tf.nn.softplus(Z) + eps
-    pdf    = tf.contrib.distributions.Poisson(rate=rate, allow_nan_stats=False)
-    logpdf = pdf.log_prob(value=Y)
+    rate     = tf.nn.softplus(Z) + eps
+    pdf      = tf.contrib.distributions.Poisson(rate=rate, allow_nan_stats=False)
+    logpdf   = pdf.log_prob(value=Y)
     feeddict = {X: mc_latent, Y: ybroad}
 
-    # Return logpdf, mean parameter, feeddict, and variables to be optimized
-    return logpdf, Z, feeddict, C
+    # Return logpdf, mean parameter, and feeddict
+    return logpdf, Z, feeddict
 
 
 def E_log_p_mc(y, mc_latent, C):
-    logpdf, mean_par, feeddict, _ = non_conjugate_likelihood(y, mc_latent, C)
+    logpdf, mean_par, feeddict = non_conjugate_likelihood(y, mc_latent, C)
 
     f   = logpdf
     df  = tf.gradients(f, mean_par)
@@ -89,24 +89,6 @@ def E_log_p_mc(y, mc_latent, C):
 
     return f, gm, gv
 
-# For M step if CVI is used in EM
-def maximize_non_conjugate(y, mc_latent, C, lr = 0.01, iters=500, verbose=True):
-    logpdf, _, feeddict, C = non_conjugate_likelihood(y, mc_latent, C)
-
-    cost = tf.reduce_sum(tf.reduce_mean(logpdf, axis=2))
-
-    optimizer = tf.train.AdamOptimizer(learning_rate=lr)  # Adam Optimizer
-    opt_op = optimizer.minimize(-cost)
-
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        for epoch in range(iters):
-            _, loss_val = sess.run([opt_op, cost], feeddict)
-            if verbose:
-                print "Epoch: %04d, train_loss: %04f" % (epoch + 1,loss_val)
-        Cval = C.eval()
-
-    return Cval
 
 def make_y_R_tilde(tlam_1, tlam_2):
     assert tlam_1.shape == tlam_2.shape

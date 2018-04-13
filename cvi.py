@@ -87,10 +87,10 @@ if __name__ == '__main__':
     args.ls          = 5
     args.os          = 10
     args.T           = 500
-    args.cvi_iters   = 10
+    args.cvi_iters   = 15
     args.nSamples    = 500
     args.verbose     = False
-    args.seed        = 2
+    args.seed        = 0
 
     # Set seed
     np.random.seed(args.seed)

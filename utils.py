@@ -9,31 +9,7 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
-<<<<<<< HEAD
 
-
-||||||| merged common ancestors
-# Predict_observations helper function
-def predict_obs(x, V, H, R, cov=True):
-    T = x.shape[1]
-    os = H.shape[0]
-    pred_obs_mean = np.zeros([os, T])
-    pred_obs_covariance = np.zeros([os, os, T])
-
-    for t in range(T):
-        xt = x[:, t]
-        Vt = V[:, :, t]
-        pred_obs_mean[:, t] = np.dot(H, xt)
-        if cov:
-            pred_obs_covariance[:, :, t] = np.dot(H, np.dot(Vt, H.T)) + R
-
-    if cov:
-        return pred_obs_mean, pred_obs_covariance
-    else:
-        return pred_obs_mean
-
-=======
->>>>>>> 3e14c2679002beadf100a53f739bbb4aec9dad0b
 # Sample from MVN using cholesky
 def chol_sample(noise, mu, cov):
     # Shape of noise parameter determines how many samples are returned
@@ -53,22 +29,6 @@ def column_vec(v):
 def trace(A, B):
     return np.sum(inner1d(A, B.T))
 
-
-def check_format(y, mu, cov):
-    # Assure y_i in [1,-1]
-    y = y > 0
-    y = 2 * y - 1
-    if y.shape[1] != 1:
-        y = y.T
-
-    # MultivariateNormalFullCovariance expects batch index to be first
-    if cov.shape[1] != cov.shape[2]:
-        cov = np.swapaxes(cov, 0, 2)
-
-    if cov.shape[0] != mu.shape[0]:
-        mu = np.swapaxes(mu, 0, 1)
-
-    return y, mu, cov
 
 
 def plot_posterior(args, path='results.png'):
@@ -115,53 +75,3 @@ def plot_posterior(args, path='results.png'):
     # Save
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(path)
-<<<<<<< HEAD
-||||||| merged common ancestors
-
-
-def plot_learned_matrices(args, path="plots/learned_parameter_results.png"):
-    # Init
-    plt.close('all')
-    fig = plt.figure(figsize=(8, 16))
-
-    learned = [
-        args.A_learned,
-        args.C_learned,
-        args.Q_learned,
-        args.D_learned,
-        args.initx_learned,
-        args.initV_learned,
-    ]
-
-    true = [
-        args.A_true,
-        args.C_true,
-        args.Q_true,
-        args.D_true,
-        args.initx_true,
-        args.initV_true,
-    ]
-
-    names = [
-        "A",
-        "C",
-        "Q",
-        "D",
-        "initx",
-        "initV",
-    ]
-
-    for i, plot_idx in enumerate(range(1, 12, 2)):
-        ax = fig.add_subplot(6, 2, plot_idx)
-        ax = sns.heatmap(true[i], ax=ax)
-        ax.set_title('True {}'.format(names[i]))
-
-        ax = fig.add_subplot(6, 2, plot_idx + 1)
-        ax = sns.heatmap(learned[i], ax=ax)
-        ax.set_title('Learned {}'.format(names[i]))
-
-    fig.tight_layout()
-    fig.savefig(path)
-=======
-
->>>>>>> 3e14c2679002beadf100a53f739bbb4aec9dad0b
