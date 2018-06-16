@@ -29,9 +29,7 @@ def column_vec(v):
 def trace(A, B):
     return np.sum(inner1d(A, B.T))
 
-
-
-def plot_posterior(args, path='results.png'):
+def plot_cvi(args, results, path='plots/cvi_results.png'):
     # Init
     plt.close('all')
     fig = plt.figure(figsize=(16, 12))
@@ -39,11 +37,11 @@ def plot_posterior(args, path='results.png'):
     plt.style.use('seaborn')
 
     T = args.T
-    elbo = [-i for i in args.elbo]
-    loglik = [-i for i in args.loglik]
-    x_data = args.x_data
-    xsmooth = args.xsmooth
-    uncertainty = args.Vsmooth
+    elbo = [-i for i in results["elbo"]]
+    loglik = [-i for i in results["loglik"]]
+    x_data = results["true"]
+    xsmooth = results["xsmooth"]
+    uncertainty = results["Vsmooth"]
 
     # Elbo
     ax = fig.add_subplot(3, 2, 1)
@@ -75,3 +73,36 @@ def plot_posterior(args, path='results.png'):
     # Save
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(path)
+
+
+def plot_baselines(results, path='plots/baselines.png'):
+    plt.close('all')
+    fig = plt.figure(figsize=(16, 12))
+    sns.set()
+    plt.style.use('seaborn')
+    for i in range(4):
+        ax = fig.add_subplot(2, 2, 1 + i)
+        plt_true  = plt.plot(results["true"][i, :],  color='C1', alpha=1.0, label='True')
+        plt_cvi   = plt.plot(results["cvi"][i, :],   color='C2', alpha=0.75, label='CVI')
+        plt_vilds = plt.plot(results["vilds"][i, :], color='C3', alpha=0.75, label='VILDS')
+        plt_gauss = plt.plot(results["gauss"][i, :], color='C4', alpha=0.75, label='Gauss')
+        plt.legend(handles = plt_true + plt_cvi + plt_vilds + plt_gauss)
+        plt.xlabel('time')
+    plt.savefig(path)
+
+def print_mse(results):
+    d_cvi   = results['true'] - results['cvi']
+    d_vilds = results['true'] - results['vilds']
+    d_gauss = results['true'] - results['gauss']
+
+    mse_cvi = np.sqrt(np.sum(d_cvi**2))
+    mse_vilds = np.sqrt(np.sum(d_vilds**2))
+    mse_gauss = np.sqrt(np.sum(d_gauss**2))
+
+
+    print("=========================")
+    print("----------MSE------------")
+    print("=========================")
+    print("cvi:  {}".format(mse_cvi))
+    print("vilds  {}".format(mse_vilds))
+    print("gauss:  {}".format(mse_gauss))

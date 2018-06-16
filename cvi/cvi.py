@@ -5,15 +5,13 @@ import numpy as np
 import tensorflow as tf
 
 from cvi_helpers import E_log_p_mc, get_elbo, make_y_R_tilde, sample_posterior
-from get_data import get_parameters, get_poission_model
-from kalman_filter import kalman_filter
-from utils import dotdict,  plot_posterior
+from kalman.kalman_filter import kalman_filter, kalman_smoother
 
-# Supress TF warning
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def train(args):
-
+    print("=========================")
+    print("-------Training CVI------")
+    print("=========================")
     # ========================= #
     # --------Initialize------- #
     # ========================= #
@@ -45,14 +43,14 @@ def train(args):
     elbo = []
     all_loglik = []
 
-    print "===========Running CVI==============="
-    for i in range(args.cvi_iters):
+    # print "===========Running CVI==============="
+    for i in range(args.iters):
         # Step 3 in Alg 1: compute SG of the non-conjugate part
         # Generate MC samples
         mc_latent = sample_posterior(xfilt, Vfilt, args.nSamples)
         fb, df, dv = E_log_p_mc(args.y_data, mc_latent, C)
 
-        # Compute lam1, lam2
+        # Compute lam1, lam2l
         mean_par = np.matmul(C, xfilt)
         tlam_1 = (1 - beta) * tlam_1 + (beta) * \
             (df - 2 * (np.multiply(dv, mean_par)))
@@ -71,46 +69,15 @@ def train(args):
 
         print "Iteration %i, LogLik: %f" % (i, loglik)
 
+    # Get smoothed
+    xsmooth, Vsmooth, _, _ = kalman_smoother(y_tilde, A, C, Q, R_tilde, initx, initV)
 
-    # Plot ELBO
-    args.elbo = elbo
-    args.loglik = all_loglik
-    args.xsmooth = xfilt
-    args.Vsmooth = Vfilt
+    results = {
+        "xsmooth":xsmooth,
+        "Vsmooth":Vsmooth,
+        "elbo":elbo,
+        "loglik":all_loglik,
+        "cvi":xsmooth # For comparison against baselines
+    }
 
-    plot_posterior(args, path='plots/results.png')
-
-
-if __name__ == '__main__':
-    # Hyperparameters
-    args = dotdict()
-    args.ls          = 5
-    args.os          = 10
-    args.T           = 500
-    args.cvi_iters   = 15
-    args.nSamples    = 500
-    args.verbose     = False
-    args.seed        = 0
-
-    # Set seed
-    np.random.seed(args.seed)
-    tf.set_random_seed(args.seed)
-
-    # Make model
-    true_model = get_poission_model(args.ls, args.os)
-
-    # sample data
-    x_data, y_data = true_model.sampleXY(args.T)
-    args.x_data = x_data.T
-    args.y_data = y_data.T
-
-    # Get true parameters
-    A, C, Q, initx, initV = get_parameters(true_model)
-    args.A = A
-    args.C = C
-    args.Q = Q
-    args.initx = initx
-    args.initV = initV
-
-    # Train
-    train(args)
+    return results

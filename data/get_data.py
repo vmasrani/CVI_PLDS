@@ -35,6 +35,15 @@ def get_poission_model(xDim, yDim, seed=1):
 
     return true_model
 
+def get_data(ls, os, T):
+    # Make model
+    model = get_poission_model(ls, os)
+    # sample data
+    x_data, y_data = model.sampleXY(T)
+
+    return x_data.T, y_data.T, model
+
+
 def get_parameters(model):
     A, QChol, Q0Chol, x0, W, b = model.getParams()
     A = A.get_value()
@@ -44,4 +53,3 @@ def get_parameters(model):
     initV = np.matmul(Q0Chol.get_value(), Q0Chol.get_value().T)
 
     return A, C, Q, initx, initV
-

@@ -80,7 +80,6 @@ def learn_kalman(data, A, C, Q, R, initx, initV, smoother=None, max_iter=10, ver
         initx = x1sum / N
         initV = P1sum / N - np.outer(initx, initx)
 
-
         # Fix matrices
         # (This is not optimized because we compute the entire matrix and throw away values)
         for key in kwargs:

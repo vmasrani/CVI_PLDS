@@ -42,6 +42,7 @@ def non_conjugate_likelihood(*args):
     y, mc_latent, C = args
     ls, sample_size, T = mc_latent.shape
     os, T = y.shape
+
     # For numerical stability
     eps = 1e-6
 
@@ -67,11 +68,11 @@ def non_conjugate_likelihood(*args):
 
 
 def E_log_p_mc(y, mc_latent, C):
-    logpdf, mean_par, feeddict = non_conjugate_likelihood(y, mc_latent, C)
+    logpdf, Z, feeddict = non_conjugate_likelihood(y, mc_latent, C)
 
     f   = logpdf
-    df  = tf.gradients(f, mean_par)
-    d2f = tf.gradients(df, mean_par)
+    df  = tf.gradients(f, Z)
+    d2f = tf.gradients(df, Z)
 
     # Run
     with tf.Session() as sess:
