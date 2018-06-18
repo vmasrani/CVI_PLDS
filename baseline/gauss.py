@@ -18,15 +18,7 @@ def train(args):
 
     R = np.eye(args.os)
 
-    # Learn R
-    fix = {
-        "fix_A":"full",
-        "fix_Q":"full",
-        "fix_C":"full",
-        "fix_initx":"full",
-        "fix_initV":"full"
-    }
-    _, _, _, R, _, _, _ = learn_kalman(args.y_data, A, C, Q, R, initx, initV, max_iter=50, smoother=kalman_smoother, **fix)
+    A, C, Q, R, initx, initV, _ = learn_kalman(args.y_data, A, C, Q, R, initx, initV, max_iter=50, smoother=kalman_smoother)
 
     # Smooth
     xsmooth, _, _, _ = kalman_smoother(args.y_data, A, C, Q, R, initx, initV)

@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from data.get_data import get_data, get_parameters
 from cvi.cvi import train as train_cvi
-from cvi.utils import dotdict, plot_cvi, plot_baselines, print_mse
+from cvi.utils import dotdict, plot_cvi, plot_baselines, plot_elbo_loglik, print_mse
 from baseline.gauss import train as train_gauss
 from baseline.vilds.main import train as train_vilds
 import os
@@ -44,6 +44,7 @@ def run():
     results["gauss"] = train_gauss(args)
 
     # Evaluate
+    plot_elbo_loglik(args, results)
     plot_cvi(args, results)
     plot_baselines(results)
     print_mse(results)
