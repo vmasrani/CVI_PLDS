@@ -19,7 +19,7 @@ pip install --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip
 
 ## Running the Code
 ```bash
-python cvi.py
+python main.py
 ```
 Hyperparameters can be tuned on lines 88 - 96. To use CVI for your own problem, write your own non-conjugate likelihood in _cvi\_helpers.non\_conjugate\_likelihood\(\)_.
 
@@ -31,7 +31,7 @@ Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.
 ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/elbo_loglik.png)
 
 ## Acknowledgements
-Our code uses the synthetic data code from [Black Box Variational Inference for Linear Dynamical Systems](https://github.com/earcher/vilds) by Archer et al.
+We use the synthetic data code and the VILDS model from [Black Box Variational Inference for Linear Dynamical Systems](https://github.com/earcher/vilds) by Archer et al.
 
 ## Citing
 
