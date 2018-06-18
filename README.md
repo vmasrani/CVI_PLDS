@@ -25,8 +25,10 @@ Hyperparameters can be tuned on lines 88 - 96. To use CVI for your own problem, 
 
 ## Plots
 Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/cvi_results.png)
-Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/baselines.png)
-Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/elbo_loglik.pn)
+
+![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/baselines.png)
+
+![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/elbo_loglik.png)
 
 ## Acknowledgements
 Our code uses the synthetic data code from [Black Box Variational Inference for Linear Dynamical Systems](https://github.com/earcher/vilds) by Archer et al.
