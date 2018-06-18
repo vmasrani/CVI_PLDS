@@ -24,7 +24,9 @@ python cvi.py
 Hyperparameters can be tuned on lines 88 - 96. To use CVI for your own problem, write your own non-conjugate likelihood in _cvi\_helpers.non\_conjugate\_likelihood\(\)_.
 
 ## Plots
-Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/results.png)
+Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/cvi_results.png)
+Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/baselines.png)
+Plots are saved in CVI_PLDS/plots (see screenshot below). ![Fig](https://github.com/vmasrani/CVI_PLDS/blob/master/plots/elbo_loglik.pn)
 
 ## Acknowledgements
 Our code uses the synthetic data code from [Black Box Variational Inference for Linear Dynamical Systems](https://github.com/earcher/vilds) by Archer et al.
